@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+.mbt/
+contrib/
+dist/
+asm/*.s
+src/*.s
