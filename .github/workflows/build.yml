@@ -1,0 +1,13 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    uses: mvslovers/mbt/.github/workflows/build.yml@main
+    with:
+      incremental: ${{ github.event_name == 'pull_request' }}
+      base_sha:    ${{ github.event.pull_request.base.sha || '' }}
