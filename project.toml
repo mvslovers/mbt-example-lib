@@ -20,7 +20,7 @@ blksize = 32760
 space = ["TRK", 5, 2, 5]
 
 [dependencies]
-"mvslovers/crent370" = ">=1.0.1"
+"mvslovers/crent370" = ">=1.0.0"
 
 [artifacts]
 mvs = true
