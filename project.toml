@@ -1,6 +1,6 @@
 [project]
 name = "exlib"
-version = "1.0.2-dev"
+version = "1.0.3-dev"
 type = "library"
 
 [mvs.build.datasets.punch]
