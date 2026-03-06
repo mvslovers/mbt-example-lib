@@ -3,6 +3,7 @@
 #define EXLIB_H
 
 /* return the sum of a and b */
-int exlib_add(int a, int b) asm("EXLIBADD");
+int exlib_sub(int a, int b) asm("EXLIBSUB");
+void exlib_hello(char *message) asm("EXLIBHEL");
 
 #endif /* EXLIB_H */
