@@ -25,7 +25,7 @@ const char *sysinfo_jobname(void) asm("SYSIFJOB");
 ** Navigates CVT -> SMCA -> SMCASID (4 bytes).
 ** Returns a pointer to a static 5-byte buffer (4 chars + NUL).
 */
-const char *sysinfo_sysid(void) asm("SYSIFsid");
+const char *sysinfo_sysid(void) asm("SYSIFSID");
 
 /*
 ** sysinfo_ipldate() — return the IPL date as packed decimal.

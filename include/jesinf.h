@@ -13,15 +13,15 @@
 typedef struct jesinf_entry JESINF_ENTRY;
 
 struct jesinf_entry {
-    char            jobname[9];     /* job name, NUL-terminated         */
-    char            jobid[9];       /* job identifier, NUL-terminated   */
-    char            owner[9];       /* owner userid, NUL-terminated     */
-    unsigned char   status;         /* job status, see JESINF_ST_*      */
+  char jobname[9];      /* job name, NUL-terminated         */
+  char jobid[9];        /* job identifier, NUL-terminated   */
+  char owner[9];        /* owner userid, NUL-terminated     */
+  unsigned char status; /* job status, see JESINF_ST_*      */
 };
 
-#define JESINF_ST_INPUT     1       /* job on input queue               */
-#define JESINF_ST_EXEC      2       /* job executing                    */
-#define JESINF_ST_OUTPUT    3       /* job on output queue              */
+#define JESINF_ST_INPUT 1  /* job on input queue               */
+#define JESINF_ST_EXEC 2   /* job executing                    */
+#define JESINF_ST_OUTPUT 3 /* job on output queue              */
 
 /*
 ** jesinf_count() — return the number of jobs on the JES2 queue.
@@ -37,6 +37,6 @@ int jesinf_count(void) asm("JESINFCT");
 ** number of entries. The caller must free the returned pointer.
 ** Returns NULL on error.
 */
-JESINF_ENTRY *jesinf_list(int *count) asm("JESINFLST");
+JESINF_ENTRY *jesinf_list(int *count) asm("JESINFLS");
 
 #endif /* JESINF_H */
