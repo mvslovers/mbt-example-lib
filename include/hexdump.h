@@ -18,6 +18,6 @@
 ** addr:  starting address of the memory region
 ** len:   number of bytes to dump
 */
-void hexdump(const void *addr, unsigned len) asm("HEXDUMP");
+void hexdump(const void *addr, unsigned len);
 
 #endif /* HEXDUMP_H */

@@ -15,9 +15,12 @@ The library provides MVS system information utilities:
 ## Building
 
 ```sh
-cp .env.example .env        # edit with your MVS connection
+git clone --recurse-submodules https://github.com/mvslovers/mbt-example-lib.git
+cd mbt-example-lib
+cp .env.example .env        # enter your MVS connection details (host, port, credentials)
 make bootstrap               # download crent370 dependency
 make build                   # cross-compile and assemble on MVS
+make package                 # package artifacts for local cache
 ```
 
 ## Understanding Autocall
@@ -75,16 +78,20 @@ linker pulls in those members regardless of symbol names.
 
 ### The `asm()` Directive
 
-Regardless of autocall, every exported function needs an `asm()`
-directive in its header to control the external symbol name. MVS
-member names are limited to 8 uppercase characters:
+MVS member and symbol names are limited to 8 uppercase characters.
+The S/370 assembler automatically uppercases all symbols, so a C
+function named `hexdump` produces the symbol `HEXDUMP` — no special
+handling needed.
+
+The `asm()` directive is only required when the C function name
+**exceeds 8 characters** or otherwise wouldn't produce a valid MVS
+symbol:
 
 ```c
-/* autocall-compatible: symbol == member name */
-void hexdump(const void *addr, unsigned len) asm("HEXDUMP");
+/* autocall-compatible: no asm() needed — hexdump → HEXDUMP */
+void hexdump(const void *addr, unsigned len);
 
-/* non-autocall: symbol != member name, but asm() is still needed
-   to produce a valid 8-char MVS external name */
+/* non-autocall: asm() required — function name > 8 chars */
 const char *sysinfo_jobname(void) asm("SYSIFJOB");
 const char *sysinfo_sysid(void)   asm("SYSIFSID");
 ```
