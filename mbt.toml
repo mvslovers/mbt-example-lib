@@ -1,7 +1,7 @@
 schema = 3
 
 [project]
-name = "mvsinfo"
+name = "mbt-example-lib"
 version = "3.0.0-dev"
 kind = "library"
 
