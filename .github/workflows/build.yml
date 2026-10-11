@@ -2,10 +2,14 @@ name: Build
 
 on:
   pull_request:
+  push:
+    branches: [main]
 
 jobs:
   build:
-    uses: mvslovers/mbt/.github/workflows/build.yml@main
+    uses: mvslovers/mbt/.github/workflows/build3.yml@main
     with:
-      incremental: ${{ github.event_name == 'pull_request' }}
-      base_sha:    ${{ github.event.pull_request.base.sha || '' }}
+      host_tests: true
+      # COBOL sources need cobc370; built from this commit until it is
+      # pinned through [tools] (b07a411: -MMD for copybooks)
+      cobc370_ref: b07a41130def89d95089f6e7db62f9919cfeda74

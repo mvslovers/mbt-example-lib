@@ -1,0 +1,32 @@
+schema = 3
+
+[project]
+name = "mvsinfo"
+version = "3.0.0-dev"
+kind = "library"
+
+[toolchain]
+mbt = "3.0"
+cc370 = "1.6.1"
+libc370 = "2.8.1"
+
+[build]
+# where COPY finds MIPARMS
+cobflags = ["-I", "copy"]
+
+# One archive from three languages. Each source is one member, and its
+# external name is the one callers name, so autocall pulls in only what
+# a program uses.
+[lib]
+name = "mvsinfo"
+sources = ["src/*.c", "asm/*.asm", "cobol/*.cbl"]
+headers = ["include/mvsinfo.h", "copy/MIPARMS.cpy"]
+
+[tests]
+rent = false
+reus = false
+
+# a host test of the one function that touches no MVS control block
+[test.TSTHEX]
+sources = ["test/tsthex.c", "src/mi_hexln.c"]
+mvs = false
