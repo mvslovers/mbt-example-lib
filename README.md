@@ -53,7 +53,7 @@ You need [MBT](https://github.com/mvslovers/mbt) 3, the CC/370 toolchain
 ```sh
 mbt build        # the archive build/mvsinfo.a
 mbt test         # the host test of the hex dump
-mbt package      # dist/mvsinfo-<version>-lib.tar.gz
+mbt package      # dist/mbt-example-lib-<version>-lib.tar.gz
 ```
 
 The project file is [`mbt.toml`](mbt.toml). A COBOL source in `sources` is
