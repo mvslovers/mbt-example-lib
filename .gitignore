@@ -1,8 +1,6 @@
-.env
-.env.*
-!.env.example
-.mbt/
-contrib/
+build/
 dist/
-asm/*.s
-src/*.s
+.mbt/
+compile_commands.json
+.cache/
+.DS_Store

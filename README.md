@@ -1,126 +1,62 @@
 # mbt-example-lib
 
-Example library for the [mbt](https://github.com/mvslovers/mbt) build system,
-demonstrating how to build an MVS 3.8j C library with dependencies,
-multiple modules, and proper linker symbol management.
+An example library for [MBT](https://github.com/mvslovers/mbt) (mbt): one
+archive, `mvsinfo.a`, built from **C, assembler and COBOL**, each language
+doing what it does best. Its companion
+[mbt-example-app](https://github.com/mvslovers/mbt-example-app) links it
+into programs written in all three.
 
-The library provides MVS system information utilities:
+| Language | Source | External name | What it does |
+|---|---|---|---|
+| C | `src/mi_sysid.c` | `MISYSID` | the SMF system id (CVT → SMCA) |
+| C | `src/mi_ipldt.c` | `MIIPLDT` | the date in the CVT, `0CYYDDDF` |
+| C | `src/mi_hexln.c`, `src/mi_hexdm.c` | `MIHEXLIN`, `MIHEXDMP` | a hex and EBCDIC dump |
+| C | `src/mi_fmtdt.c`, `src/mi_fmtnm.c` | `MIFMTDAT`, `MIFMTNUM` | C faces of the COBOL formatters |
+| Assembler | `asm/mijobn.asm` | `MIJOBN` | the job name (PSATOLD → TCBTIO → TIOT) |
+| Assembler | `asm/mitime.asm` | `MITIME` | `TIME DEC` |
+| COBOL | `cobol/mifmtd.cbl` | `MIFMTD` | `0CYYDDDF` → `YYYY.DDD` |
+| COBOL | `cobol/mifmtn.cbl` | `MIFMTN` | a number → `ZZZ,ZZZ,ZZ9-`, an edited picture |
 
-| Module | Member | Functions | Description |
-|--------|--------|-----------|-------------|
-| `hexdump.c` | HEXDUMP | `hexdump()` | Hex + EBCDIC memory dump |
-| `sysinfo.c` | SYSINFO | `sysinfo_jobname()`, `sysinfo_sysid()`, `sysinfo_ipldate()` | MVS control block queries |
-| `jesinf.c` | JESINF | `jesinf_count()`, `jesinf_list()` | JES2 job queue queries |
+C callers include `mvsinfo.h`; COBOL callers `COPY MIPARMS`. Both ship in
+the archive's `include/`.
+
+## Who calls whom
+
+C and the rest of MVS pass arguments differently:
+
+- **C** (cc370): register 1 addresses the argument *values*; the last one
+  is not marked.
+- **COBOL and the OS convention**: register 1 addresses the argument
+  *addresses*; the last one has its high-order bit set.
+
+The library bridges them in two ways:
+
+- **The assembler routines take pointers only** and drop the high-order
+  bit. A pointer passed by C and an address passed by COBOL are then the
+  same thing, so C, COBOL and assembler call `MIJOBN` and `MITIME` alike.
+- **The COBOL formatters keep the OS convention**, and C reaches them
+  through small wrappers (`mi_fmtdate()`, `mi_fmtnum()`) that pass
+  addresses and set the bit on the last one.
+
+C → COBOL, C → assembler, COBOL → assembler, assembler → COBOL and COBOL →
+COBOL work as they are. **COBOL → C** does not: C expects its own stack in
+the caller's save area, which a COBOL save area does not have. A glue
+routine for that is being designed in LIBC/370 (libc370#502).
 
 ## Building
 
+You need [MBT](https://github.com/mvslovers/mbt) 3, the CC/370 toolchain
+(cc370, with LIBC/370 and maclib370), and
+[cobc370](https://github.com/brazilofmux/cobc370) on `PATH` (or named in
+`MBT_COBC370`):
+
 ```sh
-git clone --recurse-submodules https://github.com/mvslovers/mbt-example-lib.git
-cd mbt-example-lib
-cp .env.example .env        # enter your MVS connection details (host, port, credentials)
-make bootstrap               # download crent370 dependency
-make build                   # cross-compile and assemble on MVS
-make package                 # package artifacts for local cache
+mbt build        # the archive build/mvsinfo.a
+mbt test         # the host test of the hex dump
+mbt package      # dist/mvsinfo-<version>-lib.tar.gz
 ```
 
-## Understanding Autocall
-
-When linking a load module on MVS, the linkage editor (IEWL) resolves
-external symbols by searching the SYSLIB concatenation. This mechanism
-is called **autocall**: the linker sees an unresolved symbol name, looks
-for a PDS member with the same name, and automatically includes it.
-
-This works perfectly when **each object member exports exactly one
-function whose name matches the member name**:
-
-```
-Member HEXDUMP  →  exports symbol HEXDUMP  →  autocall resolves it ✓
-```
-
-It breaks when a member exports **multiple functions** whose names
-differ from the member name:
-
-```
-Member SYSINFO  →  exports SYSIFJOB, SYSIFSID, SYSIFDTI
-                    linker looks for member SYSIFJOB → not found ✗
-```
-
-### How mbt Handles This
-
-In `project.toml`, a library declares whether its members follow the
-autocall convention:
-
-```toml
-[link]
-autocall = false    # default is true
-```
-
-When `autocall = false`, the consuming application must explicitly list
-which members to pull in via `dep_includes`:
-
-```toml
-[link.module.dep_includes]
-"mvslovers/mbt-example-lib" = "*"           # include all members
-# or selectively:
-# "mvslovers/mbt-example-lib" = ["SYSINFO", "HEXDUMP"]
-```
-
-This generates explicit `INCLUDE` statements in the link JCL, so the
-linker pulls in those members regardless of symbol names.
-
-### When to Use Which
-
-| Pattern | `autocall` | Example |
-|---------|-----------|---------|
-| One function per file, name matches member | `true` (default) | crent370, most system libs |
-| Multiple functions per file | `false` | This library, lua370 |
-| Mixed (some match, some don't) | `false` | Safe choice — explicit is always correct |
-
-### The `asm()` Directive
-
-MVS member and symbol names are limited to 8 uppercase characters.
-The S/370 assembler automatically uppercases all symbols, so a C
-function named `hexdump` produces the symbol `HEXDUMP` — no special
-handling needed.
-
-The `asm()` directive is only required when the C function name
-**exceeds 8 characters** or otherwise wouldn't produce a valid MVS
-symbol:
-
-```c
-/* autocall-compatible: no asm() needed — hexdump → HEXDUMP */
-void hexdump(const void *addr, unsigned len);
-
-/* non-autocall: asm() required — function name > 8 chars */
-const char *sysinfo_jobname(void) asm("SYSIFJOB");
-const char *sysinfo_sysid(void)   asm("SYSIFSID");
-```
-
-Without `asm()`, GCC would emit the full C function name (e.g.
-`sysinfo_jobname`), which exceeds the 8-character limit and would be
-silently truncated by the assembler — causing link failures.
-
-## Project Structure
-
-```
-mbt-example-lib/
-├── project.toml          # mbt project definition
-├── Makefile              # 2-line mbt include
-├── .env.example          # MVS connection template
-├── include/              # public headers (shipped in release)
-│   ├── hexdump.h
-│   ├── sysinfo.h
-│   └── jesinf.h
-├── src/                  # C sources
-│   ├── hexdump.c         # autocall-compatible module
-│   ├── sysinfo.c         # non-autocall module
-│   └── jesinf.c          # non-autocall module
-└── mbt/                  # build system (git submodule)
-```
-
-## See Also
-
-- [mbt-example-app](https://github.com/mvslovers/mbt-example-app) — batch
-  application that uses this library
-- [mbt](https://github.com/mvslovers/mbt) — MVS Build Tools
-- [crent370](https://github.com/mvslovers/crent370) — C runtime for MVS 3.8j
+The project file is [`mbt.toml`](mbt.toml). A COBOL source in `sources` is
+translated by cobc370 into `build/cobol/<stem>.asm` and assembled like any
+other assembler source; `[build] cobflags` tells cobc370 where `COPY`
+finds its copybooks.

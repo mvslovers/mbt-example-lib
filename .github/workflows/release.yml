@@ -6,4 +6,8 @@ on:
 
 jobs:
   release:
-    uses: mvslovers/mbt/.github/workflows/release.yml@main
+    uses: mvslovers/mbt/.github/workflows/release3.yml@main
+    permissions:
+      contents: write
+    with:
+      cobc370_ref: b07a41130def89d95089f6e7db62f9919cfeda74
