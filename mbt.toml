@@ -8,7 +8,7 @@ kind = "library"
 [toolchain]
 mbt = "3.0"
 cc370 = "1.6.1"
-libc370 = "2.8.1"
+libc370 = "2.10.2"
 
 [build]
 # where COPY finds MIPARMS
